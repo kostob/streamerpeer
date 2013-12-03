@@ -19,6 +19,7 @@
                    displayName="Source Files"
                    projectFiles="true">
       <itemPath>network.c</itemPath>
+      <itemPath>output.c</itemPath>
       <itemPath>streamer.c</itemPath>
       <itemPath>threads.c</itemPath>
     </logicalFolder>
@@ -74,6 +75,8 @@
       <item path="network.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="network.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="output.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="output.h" ex="false" tool="3" flavor2="0">
       </item>
@@ -135,6 +138,8 @@
       <item path="network.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="network.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="output.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="output.h" ex="false" tool="3" flavor2="0">
       </item>

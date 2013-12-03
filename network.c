@@ -26,9 +26,12 @@
 #include <chunkidset.h>
 #include <peer.h>
 #include <peerset.h>
+#include <peersampler.h>
+#include <scheduler_common.h>
 
 #include "network.h"
 #include "streamer.h"
+#include "output.h"
 
 char *network_create_interface(char *interface) {
 #ifdef DEBUG
@@ -69,8 +72,14 @@ int network_add_to_peerChunk(struct nodeID *remote, int chunkId) {
     // check if chunk is not too old and is still in the chunk buffer
     if (cb_get_chunk((struct chunk_buffer*) chunkBuffer, chunkId) != NULL) {
         peerChunks = (struct PeerChunk*) realloc(peerChunks, sizeof (struct PeerChunk));
+        struct peer *p;
+        p = (struct peer*) malloc(sizeof (struct peer));
+        char ip[256];
+        node_ip(remote, ip, 256);
+        p->id = create_node(ip, node_port(remote));
         peerChunks[peerChunksSize].peer = peerset_get_peer((struct peerset*) peerSet, remote);
         peerChunks[peerChunksSize++].chunk = chunkId;
+        ++peerChunksSize;
     } else {
         return -1;
     }
@@ -90,17 +99,34 @@ struct ChunkIDSet *network_chunkBuffer_to_buffermap() {
 }
 
 void network_send_chunks_to_peers() {
-    char addressRemote[256];
     int i;
 
     for (i = 0; i < peerChunksSize; ++i) {
-        node_addr(peerChunks[i].peer->id, addressRemote, 256);
-        fprintf(stderr, "Sending chunk %d to peer %s", peerChunks[i].chunk, addressRemote);
-        sendChunk(peerChunks[i].peer->id, cb_get_chunk((struct chunk_buffer*) chunkBuffer, (int) peerChunks[i].chunk), 0);
+        const struct chunk *c = cb_get_chunk((struct chunk_buffer*) chunkBuffer, peerChunks[i].chunk);
+        
+        if(c != NULL && peerChunks[i].peer != NULL) { // TODO: modify statement: check if still in psampler
+#ifdef DEBUG
+            char addressRemote[256];
+            node_addr(peerChunks[i].peer->id, addressRemote, 256);
+            fprintf(stderr, "DEBUG: Sending chunk %d to peer %s", peerChunks[i].chunk, addressRemote);
+#endif
+            sendChunk(peerChunks[i].peer->id, c, 0);
+            free(peerChunks[i].peer->id);
+            peerChunks[i].peer->id = NULL;
+        } else {
+#ifdef DEBUG
+            //char addressRemote[256];
+            //node_addr(peerChunks[i].peer->id, addressRemote, 256);
+            fprintf(stderr, "DEBUG: Sending chunk %d failed: chunk to old (not in chunkbuffer anymore)\n", peerChunks[i].chunk);            
+#endif
+        }
+        free(peerChunks[i].peer);
+        peerChunks[i].peer = NULL;
     }
 
     // reset peerChunks
     free(peerChunks);
+    peerChunks = NULL;
     peerChunksSize = 0;
 }
 
@@ -109,7 +135,75 @@ void network_print_chunkBuffer() {
     int num_chunks, i;
     chunks = cb_get_chunks((struct chunk_buffer*) chunkBuffer, &num_chunks);
 
+    fprintf(stderr, "DEBUG: Chunks in buffer:");
+
     for (i = 0; i < num_chunks; i++) {
-        fprintf(stderr, "DEBUG: \t%3d: ChunkID %d\n", i, chunks[i].id);
+        if (i % 10 == 0) {
+            fprintf(stderr, "\n\t");
+        }
+        fprintf(stderr, "%5d ", chunks[i].id);
     }
+
+    fprintf(stderr, "\n");
+    fflush(stderr);
+}
+
+struct ChunkIDSet *network_get_needed_chunks(struct ChunkIDSet *chunkIDSetReceived) {
+    int i;
+    struct ChunkIDSet *cset = (struct ChunkIDSet*) chunkID_set_init("size=0,type=bitmap");
+    if (cset == NULL) {
+        fprintf(stderr, "Unable to allocate memory for cset (network_get_needed_chunks)\n");
+        return NULL;
+    }
+    for (i = 0; i < chunkID_set_size((struct chunkID_set*) chunkIDSetReceived); ++i) {
+        if (chunkID_set_get_chunk((struct chunkID_set*) chunkIDSetReceived, i) > nextChunk) {
+            chunkID_set_add_chunk((struct chunkID_set*) cset, chunkID_set_get_chunk((struct chunkID_set*) chunkIDSetReceived, i));
+        }
+    }
+
+    return cset;
+}
+
+void network_handle_chunk_message(struct nodeID *remote, uint8_t *buffer, int numberOfReceivedBytes) {
+    int res;
+    static struct chunk c;
+    struct peer *p;
+    uint16_t transid;
+
+#ifdef DEBUG
+    char remoteAddress[256];
+    node_addr(remote, remoteAddress, 256);
+    fprintf(stderr, "Received chunk data from peer %s\n", remoteAddress);
+#endif
+
+    res = parseChunkMsg(buffer + 1, numberOfReceivedBytes - 1, &c, &transid);
+    if (res > 0) {
+        //chunk_attributes_update_received(&c); // needed? atm possibly not...
+        //chunk_unlock(c.id); // needed? atm possibly not...
+#ifdef DEBUG
+        char remoteAddress[256];
+        node_addr(remote, remoteAddress, 256);
+        fprintf(stderr, "Received chunk %d from peer: %s\n", c.id, remoteAddress);
+#endif
+        // print out chunk
+        output_deliver(&c);
+        res = cb_add_chunk((struct chunk_buffer*) chunkBuffer, &c);
+
+        if (res < 0) {
+#ifdef DEBUG
+            fprintf(stderr, "\tchunk too old, buffer full with newer chunks\n");
+#endif
+            free(c.data);
+            free(c.attributes);
+        }
+
+        //struct ChunkIDSet *cids = network_chunkBuffer_to_buffermap();
+        //sendAck(remote, (struct chunkID_set *) cids, transid);
+    } else {
+        fprintf(stderr, "\tError: can't decode chunk!\n");
+    }
+
+#ifdef DEBUG
+    network_print_chunkBuffer();
+#endif
 }

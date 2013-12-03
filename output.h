@@ -8,16 +8,10 @@
 #ifndef OUTPUT_H
 #define	OUTPUT_H
 
-#ifdef	__cplusplus
-extern "C" {
-#endif
+extern int nextChunk;
 
-
-
-
-#ifdef	__cplusplus
-}
-#endif
+int output_init(int bufsize, const char *config);
+int output_deliver(struct chunk *c);
 
 #endif	/* OUTPUT_H */
 

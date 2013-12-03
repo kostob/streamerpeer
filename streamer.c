@@ -16,6 +16,7 @@
 
 #include "streamer.h"
 #include "network.h"
+#include "output.h"
 
 static char* configServerAddress = "127.0.0.1";
 static int configServerPort = 6666;
@@ -24,6 +25,8 @@ static int configPort = 5555;
 static char *configPeersample = "protocol=cyclon";
 static char *configChunkBuffer = "size=100,time=now"; // size must be same value as chunkBufferSizeMax
 static char *configChunkIDSet = "size=100"; // size must be same value as chunkBufferSizeMax
+static char *configOutput = "";
+static int configOutputBufferSize = 75;
 
 struct ChunkBuffer *chunkBuffer = NULL;
 int chunkBufferSize = 0;
@@ -34,6 +37,7 @@ struct PeerChunk *peerChunks = NULL;
 int peerChunksSize = 0;
 
 struct nodeID *localSocket;
+struct nodeID *serverSocket;
 struct psample_context *peersampleContext;
 
 void parseCommandLineArguments(int argc, char* argv[]) {
@@ -46,7 +50,7 @@ void parseCommandLineArguments(int argc, char* argv[]) {
         // TODO: check if there is an argument i + 1
         strcpy(arg, argv[i]);
 
-        // server adress
+        // server address
         if (strcmp(arg, "-i") == 0) {
             configServerAddress = argv[i + 1];
         }
@@ -73,13 +77,8 @@ void parseCommandLineArguments(int argc, char* argv[]) {
 int init() {
 
 #ifdef DEBUG
-    fprintf(stderr, "DEBUG: Called Streamer::init\n");
+    fprintf(stderr, "DEBUG: Called streamer.c init\n");
 #endif
-    // check if a filename was entered
-    //    if (this->configFilename.empty()) {
-    //        fprintf(stderr, "No filename entered: please use -f <filename>\n");
-    //        return false;
-    //    }
 
     // create the interface for connection
     char *my_addr = network_create_interface(configInterface);
@@ -135,17 +134,20 @@ int init() {
         fprintf(stderr, "Error while initializing chunkid set\n");
         return -1;
     }
-    
-    // add server node to peersampler
-    struct nodeID *server;
-    server = create_node(configServerAddress, configServerPort);
-    psample_add_peer(peersampleContext, server, NULL, 0);
 
-    // initialize source
-    //    Input * input = Input::getInstance();
-    //    if (input->open(this->configFilename) == false) {
-    //        return false;
-    //    }
+    // set server
+    serverSocket = create_node(configServerAddress, configServerPort);
+
+    // add server node to peersampler
+    struct nodeID *s;
+    s = create_node(configServerAddress, configServerPort);
+    psample_add_peer(peersampleContext, s, NULL, 0);
+
+    // initialize output
+    if (output_init(configOutputBufferSize, configOutput) == -1) {
+        fprintf(stderr, "Error occurred: see message above.\n");
+        return -1;
+    }
 
     return 1;
 }
@@ -160,7 +162,7 @@ int main(int argc, char* argv[]) {
 
     // initialization
     if (init() != 1) {
-        fprintf(stderr, "Error occured. Please see message above for further details.\n");
+        fprintf(stderr, "Error occurred. Please see message above for further details.\n");
         return 0;
     }
 

@@ -36,6 +36,7 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 # Object Files
 OBJECTFILES= \
 	${OBJECTDIR}/network.o \
+	${OBJECTDIR}/output.o \
 	${OBJECTDIR}/streamer.o \
 	${OBJECTDIR}/threads.o
 
@@ -68,6 +69,11 @@ ${OBJECTDIR}/network.o: nbproject/Makefile-${CND_CONF}.mk network.c
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.c) -O2 -I/usr/home/tobias/dev/GRAPES/include -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/network.o network.c
+
+${OBJECTDIR}/output.o: nbproject/Makefile-${CND_CONF}.mk output.c 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.c) -O2 -I/usr/home/tobias/dev/GRAPES/include -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/output.o output.c
 
 ${OBJECTDIR}/streamer.o: nbproject/Makefile-${CND_CONF}.mk streamer.c 
 	${MKDIR} -p ${OBJECTDIR}
