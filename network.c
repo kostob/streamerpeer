@@ -31,7 +31,9 @@
 
 #include "network.h"
 #include "streamer.h"
-#include "output.h"
+//#include "output_ffmpeg.h"
+
+extern struct output_module *output;
 
 char *network_create_interface(char *interface) {
 #ifdef DEBUG
@@ -103,8 +105,8 @@ void network_send_chunks_to_peers() {
 
     for (i = 0; i < peerChunksSize; ++i) {
         const struct chunk *c = cb_get_chunk((struct chunk_buffer*) chunkBuffer, peerChunks[i].chunk);
-        
-        if(c != NULL && peerChunks[i].peer != NULL) { // TODO: modify statement: check if still in psampler
+
+        if (c != NULL && peerChunks[i].peer != NULL) { // TODO: modify statement: check if still in psampler
 #ifdef DEBUG
             char addressRemote[256];
             node_addr(peerChunks[i].peer->id, addressRemote, 256);
@@ -117,7 +119,7 @@ void network_send_chunks_to_peers() {
 #ifdef DEBUG
             //char addressRemote[256];
             //node_addr(peerChunks[i].peer->id, addressRemote, 256);
-            fprintf(stderr, "DEBUG: Sending chunk %d failed: chunk to old (not in chunkbuffer anymore)\n", peerChunks[i].chunk);            
+            fprintf(stderr, "DEBUG: Sending chunk %d failed: chunk to old (not in chunkbuffer anymore)\n", peerChunks[i].chunk);
 #endif
         }
         free(peerChunks[i].peer);
@@ -185,8 +187,15 @@ void network_handle_chunk_message(struct nodeID *remote, uint8_t *buffer, int nu
         node_addr(remote, remoteAddress, 256);
         fprintf(stderr, "Received chunk %d from peer: %s\n", c.id, remoteAddress);
 #endif
-        // print out chunk
-        output_deliver(&c);
+        // check if there are secure data needed...
+        if (output->module->secure_data_enabled_chunk(output->context) == 1) {
+            struct ChunkIDSet *cset = chunkID_set_init("size=1");
+            chunkID_set_add_chunk(cset, c.id);
+            // ask server for secured data for the chunk
+            requestSecuredDataChunk(serverSocket, cset, transid);
+        } else {
+            output->module->deliver(output->context, &c);
+        }
         res = cb_add_chunk((struct chunk_buffer*) chunkBuffer, &c);
 
         if (res < 0) {
@@ -206,4 +215,55 @@ void network_handle_chunk_message(struct nodeID *remote, uint8_t *buffer, int nu
 #ifdef DEBUG
     network_print_chunkBuffer();
 #endif
+}
+
+void network_handle_secured_chunk_message(struct nodeID* remote, uint8_t *buffer, int numberOfReceivedBytes) {
+    // combine original chunk and received data
+    int res;
+    static struct chunk c;
+    struct peer *p;
+    uint16_t transid;
+
+#ifdef DEBUG
+    char remoteAddress[256];
+    node_addr(remote, remoteAddress, 256);
+    fprintf(stderr, "Received secure chunk data\n", remoteAddress);
+#endif
+
+    res = parseChunkMsg(buffer + 1, numberOfReceivedBytes - 1, &c, &transid);
+    if (res > 0) {
+        res = output->module->deliver_encryption_data_chunk(output->context, &c);
+        if(res < 0) {
+            fprintf(stderr, "\tError: Something went wrong while processing the secured chunk data!\n");
+            free(c.data);
+            free(c.attributes);
+        }
+    } else {
+        fprintf(stderr, "\tError: can't decode secure chunk data!\n");
+    }
+}
+
+void network_handle_secured_login_message(struct nodeID* remote, uint8_t *buffer, int numberOfReceivedBytes) {
+    int res;
+    static struct chunk c;
+    struct peer *p;
+    uint16_t transid;
+
+#ifdef DEBUG
+    char remoteAddress[256];
+    node_addr(remote, remoteAddress, 256);
+    fprintf(stderr, "Received secure login data\n", remoteAddress);
+#endif
+
+    res = parseChunkMsg(buffer + 1, numberOfReceivedBytes - 1, &c, &transid);
+    if (res > 0) {
+        res = output->module->deliver_encryption_data_login(output->context, &c);
+        if(res < 0) {
+            fprintf(stderr, "\tError: Something went wrong while processing the secured login data!\n");
+            free(c.data);
+            free(c.attributes);
+        }
+    } else {
+        fprintf(stderr, "\tError: can't decode secure login data!\n");
+    }
 }

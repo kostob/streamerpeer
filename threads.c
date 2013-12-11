@@ -24,7 +24,7 @@
 #include "threads.h"
 #include "streamer.h"
 #include "network.h"
-#include "output.h"
+#include "output_factory.h"
 
 #define BUFFSIZE 64 * 1024
 
@@ -34,6 +34,8 @@ pthread_mutex_t peerChunkMutex; // for peerChunk
 
 static int stopThreads;
 static int transId = 1;
+
+extern struct output_module *output;
 
 static void *threads_receive_data(void *mut) {
 #ifdef DEBUG
@@ -69,6 +71,22 @@ static void *threads_receive_data(void *mut) {
                 pthread_mutex_lock(&chunkBufferMutex);
                 network_handle_chunk_message(remote, buffer, numberOfReceivedBytes);
                 pthread_mutex_unlock(&chunkBufferMutex);
+                break;
+            }
+            case MSG_TYPE_SECURED_DATA_CHUNK:
+            {
+                if (output->module->secure_data_enabled_chunk(output->context) == 1) {
+                    pthread_mutex_lock(&chunkBufferMutex);
+                    network_handle_secured_chunk_message(remote, buffer, numberOfReceivedBytes);
+                    pthread_mutex_unlock(&chunkBufferMutex);
+                }
+                break;
+            }
+            case MSG_TYPE_SECURED_DATA_LOGIN:
+            {
+                if (output->module->secure_data_enabled_login(output->context) == 1) {
+                    network_handle_secured_login_message(remote, buffer, numberOfReceivedBytes);
+                }
                 break;
             }
             case MSG_TYPE_SIGNALLING:
@@ -260,6 +278,7 @@ static void *threads_send_topology(void *mut) {
         if (numberOfNeighbours == 0) {
             fprintf(stderr, "ERROR: Lost all connections, even to server.\n");
             stopThreads = 1;
+            // TODO: stop the receiving thread (recv_from_peer will block till data where received)
         }
         pthread_mutex_unlock(&topologyMutex);
         usleep(1 * 1000 * 1000); // 1 sec
@@ -327,12 +346,23 @@ static void *threads_send_chunk(void *mut) {
     return NULL;
 }
 
+static void *threads_request_secured_data_login(void *mut) {
+#ifdef DEBUG
+    fprintf(stderr, "DEBUG: Thread started request_secured_data_login\n");
+#endif
+    if (output->module->secure_data_enabled_login(output->context) == 1) {
+        requestSecuredDataLogin(serverSocket, transId++);
+    }
+
+    return NULL;
+}
+
 void threads_start() {
 #ifdef DEBUG
     fprintf(stderr, "DEBUG: Called threads_start\n");
 #endif
 
-    pthread_t offerChunkThread, receiveDataThread, sendTopologyThread, sendChunkThread;
+    pthread_t offerChunkThread, receiveDataThread, sendTopologyThread, sendChunkThread, requestSecuredDataLoginThread;
 
     stopThreads = 0;
 
@@ -349,10 +379,12 @@ void threads_start() {
     pthread_create(&sendTopologyThread, NULL, threads_send_topology, NULL); // Thread for sharing the topology of the p2p network
     pthread_create(&offerChunkThread, NULL, threads_offer_chunk, NULL); // Thread for generating chunks
     pthread_create(&sendChunkThread, NULL, threads_send_chunk, NULL); // Thread for sending the chunks
+    pthread_create(&requestSecuredDataLoginThread, NULL, threads_request_secured_data_login, NULL); // Thread for requesting secured data for login
 
     // join threads
     pthread_join(offerChunkThread, NULL);
     pthread_join(receiveDataThread, NULL);
     pthread_join(sendTopologyThread, NULL);
     pthread_join(sendChunkThread, NULL);
+    pthread_join(requestSecuredDataLoginThread, NULL);
 }

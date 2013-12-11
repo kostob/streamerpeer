@@ -16,7 +16,7 @@
 
 #include "streamer.h"
 #include "network.h"
-#include "output.h"
+#include "output_factory.h"
 
 static char* configServerAddress = "127.0.0.1";
 static int configServerPort = 6666;
@@ -25,7 +25,7 @@ static int configPort = 5555;
 static char *configPeersample = "protocol=cyclon";
 static char *configChunkBuffer = "size=100,time=now"; // size must be same value as chunkBufferSizeMax
 static char *configChunkIDSet = "size=100"; // size must be same value as chunkBufferSizeMax
-static char *configOutput = "";
+static char *configOutput = "buffer=75";
 static int configOutputBufferSize = 75;
 
 struct ChunkBuffer *chunkBuffer = NULL;
@@ -35,6 +35,8 @@ struct PeerSet *peerSet = NULL;
 struct ChunkIDSet *chunkIDSet = NULL;
 struct PeerChunk *peerChunks = NULL;
 int peerChunksSize = 0;
+
+struct output_module *output = NULL;
 
 struct nodeID *localSocket;
 struct nodeID *serverSocket;
@@ -144,12 +146,13 @@ int init() {
     psample_add_peer(peersampleContext, s, NULL, 0);
 
     // initialize output
-    if (output_init(configOutputBufferSize, configOutput) == -1) {
+    output = output_init(configOutput);
+    if (output == NULL) {
         fprintf(stderr, "Error occurred: see message above.\n");
         return -1;
     }
 
-    return 1;
+    return 0;
 }
 
 /*
@@ -161,7 +164,7 @@ int main(int argc, char* argv[]) {
     parseCommandLineArguments(argc, argv);
 
     // initialization
-    if (init() != 1) {
+    if (init() != 0) {
         fprintf(stderr, "Error occurred. Please see message above for further details.\n");
         return 0;
     }

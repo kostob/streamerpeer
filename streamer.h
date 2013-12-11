@@ -25,6 +25,8 @@ extern struct ChunkIDSet *chunkIDSet;
 extern struct PeerChunk *peerChunks;
 extern int peerChunksSize;
 
+extern struct output_module localOutput;
+
 extern struct nodeID *localSocket;
 extern struct psample_context *peersampleContext;
 extern struct nodeID *serverSocket;

@@ -5,7 +5,9 @@
                    displayName="Header Files"
                    projectFiles="true">
       <itemPath>network.h</itemPath>
-      <itemPath>output.h</itemPath>
+      <itemPath>output_factory.h</itemPath>
+      <itemPath>output_ffmpeg.h</itemPath>
+      <itemPath>output_interface.h</itemPath>
       <itemPath>signaling.h</itemPath>
       <itemPath>streamer.h</itemPath>
       <itemPath>threads.h</itemPath>
@@ -19,7 +21,8 @@
                    displayName="Source Files"
                    projectFiles="true">
       <itemPath>network.c</itemPath>
-      <itemPath>output.c</itemPath>
+      <itemPath>output_factory.c</itemPath>
+      <itemPath>output_ffmpeg.c</itemPath>
       <itemPath>streamer.c</itemPath>
       <itemPath>threads.c</itemPath>
     </logicalFolder>
@@ -76,9 +79,15 @@
       </item>
       <item path="network.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="output.c" ex="false" tool="0" flavor2="0">
+      <item path="output_factory.c" ex="false" tool="0" flavor2="0">
       </item>
-      <item path="output.h" ex="false" tool="3" flavor2="0">
+      <item path="output_factory.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="output_ffmpeg.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="output_ffmpeg.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="output_interface.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="signaling.h" ex="false" tool="3" flavor2="0">
       </item>
@@ -139,9 +148,15 @@
       </item>
       <item path="network.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="output.c" ex="false" tool="0" flavor2="0">
+      <item path="output_factory.c" ex="false" tool="0" flavor2="0">
       </item>
-      <item path="output.h" ex="false" tool="3" flavor2="0">
+      <item path="output_factory.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="output_ffmpeg.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="output_ffmpeg.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="output_interface.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="signaling.h" ex="false" tool="3" flavor2="0">
       </item>
