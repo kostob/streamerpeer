@@ -232,7 +232,7 @@ void network_handle_secured_chunk_message(struct nodeID* remote, uint8_t *buffer
 
     res = parseChunkMsg(buffer + 1, numberOfReceivedBytes - 1, &c, &transid);
     if (res > 0) {
-        res = output->module->deliver_encryption_data_chunk(output->context, &c);
+        res = output->module->deliver_secured_data_chunk(output->context, &c);
         if(res < 0) {
             fprintf(stderr, "\tError: Something went wrong while processing the secured chunk data!\n");
             free(c.data);
@@ -257,7 +257,7 @@ void network_handle_secured_login_message(struct nodeID* remote, uint8_t *buffer
 
     res = parseChunkMsg(buffer + 1, numberOfReceivedBytes - 1, &c, &transid);
     if (res > 0) {
-        res = output->module->deliver_encryption_data_login(output->context, &c);
+        res = output->module->deliver_secured_data_login(output->context, &c);
         if(res < 0) {
             fprintf(stderr, "\tError: Something went wrong while processing the secured login data!\n");
             free(c.data);

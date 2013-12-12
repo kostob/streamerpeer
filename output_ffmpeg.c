@@ -301,8 +301,8 @@ struct output_interface output_ffmpeg = {
     .init = output_ffmpeg_init,
     .deliver = output_ffmpeg_deliver,
     .close = output_ffmpeg_close,
-    .deliver_encryption_data_chunk = output_ffmpeg_deliver_secured_data_chunk,
-    .deliver_encryption_data_login = output_ffmpeg_deliver_secured_data_login,
+    .deliver_secured_data_chunk = output_ffmpeg_deliver_secured_data_chunk,
+    .deliver_secured_data_login = output_ffmpeg_deliver_secured_data_login,
     .secure_data_enabled_chunk = output_ffmpeg_secured_data_enabled_chunk,
     .secure_data_enabled_login = output_ffmpeg_secured_data_enabled_login,
 };
