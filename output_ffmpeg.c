@@ -3,6 +3,8 @@
  * Author: tobias
  *
  * Created on 01. December 2013, 11:06
+ * 
+ * originally from peerstreamer (Streamers/output-grapes.c)
  */
 
 #include <stdio.h>
@@ -39,6 +41,12 @@ struct output_context {
     uint8_t securedDataLogin;
 };
 
+/**
+ * Initialize the output module
+ * 
+ * @param config 
+ * @return 
+ */
 struct output_context *output_ffmpeg_init(const char *config) {
     struct output_context *context;
     context = (struct output_context*) malloc(sizeof (struct output_context));
@@ -97,6 +105,11 @@ struct output_context *output_ffmpeg_init(const char *config) {
     return context;
 }
 
+/**
+ * Prints all chunks is output buffer to stderr
+ * 
+ * @param context context of the output module
+ */
 static void output_ffmpeg_buffer_print(struct output_context *context) {
 #ifdef DEBUG
     int i;
@@ -117,6 +130,12 @@ static void output_ffmpeg_buffer_print(struct output_context *context) {
 #endif
 }
 
+/**
+ * Free output buffer for saving newer chunks
+ * 
+ * @param context
+ * @param i
+ */
 static void output_ffmpeg_buffer_free(struct output_context *context, int i) {
 #ifdef DEBUG
     fprintf(stderr, "DEBUG: \t\tFlush outputBuffer %d: %s\n", i, context->outputBuffer[i].c.data);
@@ -148,6 +167,12 @@ static void output_ffmpeg_buffer_free(struct output_context *context, int i) {
     nextChunk = context->outputBuffer[i].c.id + 1;
 }
 
+/**
+ * Walks through output buffer and free output buffer if needed
+ * 
+ * @param context
+ * @param id
+ */
 static void output_ffmpeg_buffer_flush(struct output_context *context, int id) {
     int i = id % context->outputBufferSize;
 
@@ -160,6 +185,16 @@ static void output_ffmpeg_buffer_flush(struct output_context *context, int id) {
     }
 }
 
+/**
+ * Handle incomming chunk
+ * insert incomming chunk in output buffer or print if chunk is next
+ * 
+ * return 0 on success, -1 on error
+ * 
+ * @param context
+ * @param c
+ * @return int
+ */
 int output_ffmpeg_deliver(struct output_context *context, struct chunk *c) {
     if (!context->outputBuffer) {
         fprintf(stderr, "Warning: code should use output_init! Setting output buffer to 75\n");
@@ -211,8 +246,8 @@ int output_ffmpeg_deliver(struct output_context *context, struct chunk *c) {
         fprintf(stderr, "DEBUG: \tOut Chunk[%d] - %d\n", c->id, c->id % context->outputBufferSize);
 #endif
 
-        if (context->startId == -1 || c->id >= context->startId) {
-            if (context->endId == -1 || c->id <= context->endId) {
+        if (context->startId == -1 || c->id >= context->startId) { // TODO: remove
+            if (context->endId == -1 || c->id <= context->endId) { // TODO: remove
                 if (context->sflag == 0) {
 #ifdef DEBUG
                     fprintf(stderr, "DEBUG: First chunk id played out: %d\n\n", c->id);
@@ -226,8 +261,8 @@ int output_ffmpeg_deliver(struct output_context *context, struct chunk *c) {
                 fprintf(stderr, "DEBUG: Last chunk id played out: %d\n\n", context->lastChunk);
 #endif
                 context->eflag = 1;
-            }
-        }
+            } // TODO: remove
+        } // TODO: remove
         //reg_chunk_playout(c->id, true, c->timestamp);
         ++nextChunk;
         output_ffmpeg_buffer_flush(context, nextChunk);
@@ -256,14 +291,37 @@ int output_ffmpeg_deliver(struct output_context *context, struct chunk *c) {
     return 0;
 }
 
+/**
+ * Close everything on output module
+ * 
+ * @param context
+ */
 void output_ffmpeg_close(struct output_context *context) {
     out_stream_close(context->outputStream);
 }
 
+/**
+ * Handle incomming secured data for chunk
+ * 
+ * Returns 0 on success, -1 on error
+ * 
+ * @param context
+ * @param securedData
+ * @return int
+ */
 int output_ffmpeg_deliver_secured_data_chunk(struct output_context *context, struct chunk *securedData) {
     return 0; // returns 0 on success, -1 on error
 }
 
+/**
+ * Handle secured data for beginning of transaction
+ * 
+ * Returns 0 on success, -1 on error
+ * 
+ * @param context
+ * @param securedData
+ * @return 
+ */
 int output_ffmpeg_deliver_secured_data_login(struct output_context *context, struct chunk *securedData) {
     memcpy(&context->securedDataLogin, securedData->data, sizeof(uint8_t));
     return 0; // return 0 on success, -1 on error
@@ -281,7 +339,7 @@ int output_ffmpeg_secured_data_enabled_chunk(struct output_context *context) {
 }
 
 /**
- * Check if module uses secure data for login
+ * Check if module uses secure data for beginning of transaction
  * 
  * returns 0 if not, 1 if secure data are used
  * 
@@ -291,7 +349,15 @@ int output_ffmpeg_secured_data_enabled_login(struct output_context *context) {
     return 0;
 }
 
-int output_ffmpeg_write_chunk(struct output_stream *outputStream, struct chunk *c) {
+/**
+ * Write chunk
+ * Here chunk_write from GREAPES is called...
+ * 
+ * @param outputStream
+ * @param c
+ * @return 
+ */
+void output_ffmpeg_write_chunk(struct output_stream *outputStream, struct chunk *c) {
     // if secured data are used:
     // make your custom calculations...
     chunk_write(outputStream, c);

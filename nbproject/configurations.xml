@@ -8,10 +8,8 @@
       <itemPath>output_factory.h</itemPath>
       <itemPath>output_ffmpeg.h</itemPath>
       <itemPath>output_interface.h</itemPath>
-      <itemPath>signaling.h</itemPath>
       <itemPath>streamer.h</itemPath>
       <itemPath>threads.h</itemPath>
-      <itemPath>watermark.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"
                    displayName="Resource Files"
@@ -89,8 +87,6 @@
       </item>
       <item path="output_interface.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="signaling.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="streamer.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="streamer.h" ex="false" tool="3" flavor2="0">
@@ -98,8 +94,6 @@
       <item path="threads.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="threads.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="watermark.h" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
     <conf name="Release" type="1">
@@ -158,8 +152,6 @@
       </item>
       <item path="output_interface.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="signaling.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="streamer.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="streamer.h" ex="false" tool="3" flavor2="0">
@@ -167,8 +159,6 @@
       <item path="threads.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="threads.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="watermark.h" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
   </confs>
